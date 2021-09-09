@@ -25,10 +25,12 @@ enum curve_mode {
         cubic_spline = 4,
 };
 
-struct custom_radio_button_element : toggle_selector, basic_receiver<button_state>
+struct custom_radio_button_element : element, basic_receiver<button_state>
 {
-    using toggle_selector::toggle_selector;
 
+    custom_radio_button_element(std::string text)
+     : _text(std::move(text))
+    {}
     const color background = colors::light_salmon;
     const color hilite_color = colors::light_coral;
 
@@ -60,6 +62,16 @@ struct custom_radio_button_element : toggle_selector, basic_receiver<button_stat
       ctx.canvas.fill_text(_text.c_str(), point{ cx, cy });
     }
 
+    view_limits limits(const basic_context &ctx) const override
+    {
+        auto t_size = measure_text(ctx.canvas, _text, get_theme().text_box_font);
+        view_limits limits;
+        limits.max = point(full_extent, t_size.y);
+        return limits;
+    }
+
+
+    std::string _text;
 };
 
 inline auto custom_radio_button(std::string text)
@@ -413,7 +425,7 @@ public:
             }
             else { // simple click
                 last_click = std::chrono::high_resolution_clock::now();
-                if(found == -1) { // no sample here
+                if(found == -1 && btn.modifiers == 0) { // no sample here
                     add_sample(btn.pos, ctx);
                     focused = selected; // add_sample selects the added sample
                 } else { // sample here
@@ -458,7 +470,7 @@ public:
         auto pos = ctx.bounds.top_left();
         const point btn_pos = in_bounds(ctx, btn.pos);
         const point btn_pos_relative( (btn_pos.x - pos.x) / size.x, (btn_pos.y - pos.y) / size.y );
-        if(selected != -1)  {
+        if(selected != -1)  { // drag sample and swap if necessary
             samples[selected].x = btn_pos_relative.x;
             samples[selected].y = btn_pos_relative.y;
             if( size_t(selected) < samples.size() - 1 && samples[selected].x > samples[selected + 1].x) {
@@ -471,8 +483,7 @@ public:
                 selected -=1;
                 focused -= 1;
             }
-            ctx.view.layout();
-            //ctx.view.refresh();
+            ctx.view.refresh();
         } else if(selected == -1 && (btn.modifiers == mod_alt || btn.modifiers == mod_shift)){ // find segment
             if( (btn_pos_relative.x < samples.front().x) || (btn_pos_relative.x > samples.back().x) ) return;
             for(size_t i = 0; i < samples.size() - 1; i++)
@@ -490,18 +501,6 @@ public:
                 ctx.view.refresh();
             }
         }
-    }
-
-
-    void set_mode(curve_mode c)
-    {
-        if(c != mode) {
-            mode = c;
-
-            auto state = get_state();
-        }
-
-        this->mode = c;
     }
 
     curve_editor_controller value() const override
@@ -561,7 +560,7 @@ auto my_app::make_mode_buttons()
    spline_mode.on_click = [&](bool b) {
        if(!b) return;
        //editor.value(curve_editor_controller(curve_mode::cubic_spline));
-       editor.set_mode(curve_mode::cubic_spline);
+       editor.value(curve_editor_controller(curve_mode::cubic_spline));
        _view.refresh();
    };
    log_exp.on_click = [&](bool b) {
@@ -632,17 +631,16 @@ my_app::my_app(int argc, char *argv[]) :
       this->stop();
     };
 
-    _win.position(point(600, 400));
+    //_win.position(point(600, 400));
 
 
     _view.content(
+                max_size({1920, 1080},
                 margin({15, 15, 15, 15},
-                       hstretch(1,
-                       htile(
+                       hstretch(2,
                        vtile(
                            make_help_button(),
                            top_margin(15, make_control()),
-                           //top_margin(15, make_mode_buttons())
                            top_margin(15, make_mode_buttons())
                            )))
                        ),
