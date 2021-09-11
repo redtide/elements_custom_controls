@@ -4,6 +4,7 @@ Custom controls made with [Elements](https://github.com/cycfi/elements) GUI libr
 
 In order to build those project, please refer to [Elements setup guide](https://cycfi.github.io/elements/setup)
 
+
 ## Curve Editor 
 
 A 2D time curve editor, allowing user to write and display the following curves : 
@@ -13,6 +14,7 @@ A 2D time curve editor, allowing user to write and display the following curves 
 - Cubic Bezier
 - Quadratic Bezier
 - Cubic Spline
+
 
 ## Oscilloscope
 
