@@ -172,31 +172,32 @@ public:
         }  else {
 
             concurrent_queue<float>& cv = osc.get_buffer();
-            std::cout << "queue size : " << cv.size() << std::endl;
             float v = 0;
             while(cv.try_pop(v)) {
                 circular.set(v);
             }
 
 
+            ctx.canvas.stroke_color(colors::azure);
+            ctx.canvas.line_width(2);
             for(auto it = circular.init_read(); it < circular.size() - 1; it = circular.next())
             {
                 float v = circular.get();
                 float vnext = circular.get_at(it + 1);
 
-                const float px1 = float(it) / float(circular_size);
                 const float px2 = float(it + 1) / float(circular_size);
-                const point p1 = point(px1 * ctx.bounds.size().x + ctx.bounds.left,
-                                       ((v + 1) / 2.0) * ctx.bounds.size().y + ctx.bounds.top);
                 const point p2 = point(px2 * ctx.bounds.size().x + ctx.bounds.left,
                                        ((vnext + 1) / 2.0) * ctx.bounds.size().y + ctx.bounds.top);
-                ctx.canvas.stroke_color(colors::azure);
-                ctx.canvas.line_width(2);
-                ctx.canvas.move_to(p1);
-                ctx.canvas.line_to(p2);
-                ctx.canvas.stroke();
 
+                if(it == 0) {
+                    const float px1 = float(it) / float(circular_size);
+                    const point p1 = point(px1 * ctx.bounds.size().x + ctx.bounds.left,
+                                       ((v + 1) / 2.0) * ctx.bounds.size().y + ctx.bounds.top);
+                    ctx.canvas.move_to(p1);
+                }
+                ctx.canvas.line_to(p2);
             }
+            ctx.canvas.stroke();
         }
     }
 

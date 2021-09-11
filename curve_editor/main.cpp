@@ -187,39 +187,41 @@ public:
         case curve_mode::linear:
         {
             for(size_t i = 0; i < samples.size() - 1; i++) {
-                const point p1(samples[i].x * size.x + pos.x, samples[i].y * size.y + pos.y);
+
+                if(i == 0 ) {
+                    const point p(samples[i].x * size.x + pos.x, samples[i].y * size.y + pos.y);
+                    cnv.move_to(p);
+                }
                 const point p2(samples[i + 1].x * size.x + pos.x, samples[i + 1].y * size.y + pos.y);
-                cnv.move_to(p1);
                 cnv.line_to(p2);
-                cnv.stroke();
             }
+
+            cnv.stroke();
             break;
         }
         case curve_mode::log_exp:
         {
+
+            const point origin(samples[0].x * size.x + pos.x, samples[0].y * size.y + pos.y);
+            cnv.move_to(origin);
             for(size_t i = 0; i < samples.size() - 1; i++) {
                 if(samples[i].curve == 0.0f) {
-                    const point p1(samples[i].x * size.x + pos.x, samples[i].y * size.y + pos.y);
                     const point p2(samples[i + 1].x * size.x + pos.x, samples[i + 1].y * size.y + pos.y);
-                    cnv.move_to(p1);
                     cnv.line_to(p2);
-                    cnv.stroke();
                 } else {
                     const float granularized_begx = samples[i].x * granularity;
                     const float granularized_fbx = samples[i + 1].x * granularity;
                     const float amp_x = abs(granularized_begx - granularized_fbx);
-                    point p1(samples[i].x * size.x + pos.x, samples[i].y * size.y + pos.y);
                     for(int l_idx = 0; l_idx < int(amp_x); l_idx++ ) {
                         const float curve =  (samples[i].y > samples[i + 1].y) ? -samples[i].curve :  samples[i].curve;
                         const float y_val = get_curve(samples[i].y, samples[i + 1].y, int(amp_x), l_idx, curve) * size.y + pos.y;
                         const float x_val = ((l_idx + granularized_begx) / granularity) * size.x + pos.x;
-                        cnv.move_to(p1);
-                        cnv.line_to(x_val, y_val);
-                        cnv.stroke();
-                        p1 = point(x_val, y_val);
+                        const point p2(x_val, y_val);
+                        cnv.line_to(p2);
                     }
                 }
             }
+            cnv.stroke();
             break;
         }
         case curve_mode::cubic_spline:
@@ -233,49 +235,52 @@ public:
             const int start_x = int(samples.front().x * granularity) + 1;
             const int end_x = int(samples.back().x *granularity) - 1;
 
+            p1 = point( (float(start_x) / float(granularity) ) * size.x + pos.x, (vec[start_x] * size.y) + pos.y);
+            p1 = in_bounds(ctx, p1);
+            cnv.move_to(p1);
+
             for(int i = start_x; i < end_x; i++)
             {
                 const float x_relative = float(i) / float(granularity);
                 const float x_absolute = ( x_relative )  * size.x + pos.x;
-                p1 = point(x_absolute, (vec[i] * size.y) + pos.y);
-                p1 = in_bounds(ctx, p1);
                 p2 = point(x_absolute + step, vec[i+1] * size.y + pos.y);
                 p2 = in_bounds(ctx, p2);
-
-                cnv.move_to(p1);
                 cnv.line_to(p2);
-                cnv.stroke();
             }
+            cnv.stroke();
             break;
         }
 
         case curve_mode::cubic_bezier:
         {
             if(samples.size() < 4) return;
+
+            const point p1(samples[0].x * size.x  + pos.x, samples[0].y * size.y + pos.y);
+            cnv.move_to(p1);
+
             for(size_t i = 0; i < samples.size() - 3; i+=3) {
-                const point p1(samples[i].x * size.x + pos.x, samples[i].y * size.y + pos.y);
                 const point p2(samples[i + 1].x * size.x + pos.x, samples[i + 1].y * size.y + pos.y);
                 const point p3(samples[i + 2].x * size.x + pos.x, samples[i + 2].y * size.y + pos.y);
                 const point p4(samples[i + 3].x * size.x + pos.x, samples[i + 3].y * size.y + pos.y);
-                cnv.move_to(p1);
                 cnv.bezier_curve_to(p2, p3, p4);
-                cnv.stroke();
             }
+
+            cnv.stroke();
             break;
 
         }
         case curve_mode::quadratic_bezier:
         {
             if(samples.size() < 3) return;
+
+            const point p1(samples[0].x * size.x + pos.x, samples[0].y * size.y + pos.y);
+            cnv.move_to(p1);
             for(size_t i = 0; i < samples.size() - 2; i+=2) {
-                const point p1(samples[i].x * size.x + pos.x, samples[i].y * size.y + pos.y);
                 const point p2(samples[i + 1].x * size.x + pos.x, samples[i + 1].y * size.y + pos.y);
                 const point p3(samples[i + 2].x * size.x + pos.x, samples[i + 2].y * size.y + pos.y);
-                cnv.move_to(p1);
                 cnv.quadratic_curve_to(p2, p3);
-                cnv.stroke();
             }
-
+            cnv.stroke();
             break;
         }
         default:
